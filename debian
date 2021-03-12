@@ -1,0 +1,61 @@
+sudo -i
+
+# add non-free repos
+echo 'deb http://deb.debian.org/debian buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list
+
+apt-get update && apt-get upgrade
+
+# Install locales package
+apt-get install -y locales
+
+# Uncomment en_US.UTF-8 for inclusion in generation
+sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen
+
+# Generate locale
+locale-gen
+
+# Export env vars
+echo "export LC_ALL=en_US.UTF-8" >> ~/.bashrc
+echo "export LANG=en_US.UTF-8" >> ~/.bashrc
+echo "export LANGUAGE=en_US.UTF-8" >> ~/.bashrc
+
+# Remove foreign language man files
+rm -rf /usr/share/man/??
+rm -rf /usr/share/man/??_*
+
+# Low-Latency IO-Scheduler
+echo deadline > /sys/block/sda/queue/scheduler
+
+# grub timeout
+echo "GRUB_TIMEOUT=2" >>  /etc/default/grub
+update-grub
+
+# fix vim arrow keys
+echo "set nocompatible" > ~/.vimrc
+echo "COMPRESS=xz" > /etc/initramfs-tools/conf.d/compress
+echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
+
+# Replace the getty processes with the ngetty single process daemon
+apt install -y mingetty
+cd /sbin && rm getty && ln -s mingetty getty
+echo "ACTIVE_CONSOLES=/dev/tty[1-1]" >> /etc/default/console-setup
+
+#
+#dpkg-query -Wf '${Package;-40}${Essential}\n' | grep yes
+
+# apt autoremove
+apt-get purge --auto-remove unattended-upgrades
+apt autoremove
+
+## install homeassistant
+
+apt-get install -y software-properties-common apparmor-utils apt-transport-https ca-certificates curl dbus jq network-manager
+
+systemctl disable ModemManager
+systemctl stop ModemManager
+
+curl -fsSL get.docker.com | sh
+
+curl -sL "https://raw.githubusercontent.com/Kanga-Who/home-assistant/master/supervised-installer.sh" | bash -s
+
+# next install addons https://github.com/zigbee2mqtt/hassio-zigbee2mqtt
